@@ -14,7 +14,7 @@
 # NOTICE.
 #       Author: visualge@gmail.com (CountChu)
 #       Created on 2023/9/16
-#       Updated on 2023/10/31
+#       Updated on 2023/11/9
 #
 
 import argparse
@@ -29,7 +29,10 @@ def build_args():
     Usage 1: Generate all log files for all dates read from the latest CSV file. 
     	python time_logger.py
 
-    Usage 2: Generate one log file for the given date from the latest CSV file.
+    Usage 2: Follow Usage 1 and display contents as multiple lines. 
+    	python time_logger.py -m
+
+    Usage 3: Generate one log file for the given date from the latest CSV file.
     	python time_logger.py -d 2023-09-15
 '''
 
@@ -41,14 +44,16 @@ def build_args():
                 formatter_class=argparse.RawTextHelpFormatter,
                 description=desc)
 
-	#
-	# Anonymous arguments.
-	#
-
     parser.add_argument(
             '-d',
             dest='date',
             help='E.g., 2023-09-15')  	
+
+    parser.add_argument(
+            '-m',
+            dest='multi',
+            action='store_true',
+            help='Display comment in multiple lines.')    
 
     #
     # Check arguments.
@@ -71,7 +76,7 @@ def calculate_minutes(value):
 	minutes = int(HH) * 60 + int(MM)
 	return minutes
 
-def write_daily(fn, df):
+def write_daily(args, fn, df):
 	print('Writing %s' % fn)
 
 	minutes_0 = df[df['Tags'] == '$']['DurationMinutes'].sum()
@@ -102,7 +107,11 @@ def write_daily(fn, df):
 		if Comment == '':
 			f.write('%s - %s | %s%s\n' % (FromTime, ToTime, Tags, Class))
 		else:
-			f.write('%s - %s | %s%s | %s\n' % (FromTime, ToTime, Tags, Class, Comment))
+			if args.multi:
+				f.write('%s - %s | %s%s\n' % (FromTime, ToTime, Tags, Class))
+				f.write('              | %s\n' % Comment)
+			else:			
+				f.write('%s - %s | %s%s | %s\n' % (FromTime, ToTime, Tags, Class, Comment))
 
 	f.close()
 
@@ -195,7 +204,7 @@ def main():
 
 		if Comment == '':
 			print('%s | %s - %s %4d | %s%s' % (Date, FromTime, ToTime, Duration, Tags, Class))
-		else:
+		else:	
 			print('%s | %s - %s %4d | %s%s | %s' % (Date, FromTime, ToTime, Duration, Tags, Class, Comment))
 
 	Date_ls = df2['Date'].unique()
@@ -203,7 +212,7 @@ def main():
 		out_fn = os.path.join('output', '%s.txt' % Date)
 		df3 = df2[df2['Date'] == Date]
 
-		write_daily(out_fn, df3)
+		write_daily(args, out_fn, df3)
 
 
 if __name__ == '__main__':
