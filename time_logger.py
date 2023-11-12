@@ -14,7 +14,7 @@
 # NOTICE.
 #       Author: visualge@gmail.com (CountChu)
 #       Created on 2023/9/16
-#       Updated on 2023/11/9
+#       Updated on 2023/11/12
 #
 
 import argparse
@@ -32,7 +32,10 @@ def build_args():
     Usage 2: Follow Usage 1 and display contents as multiple lines. 
     	python time_logger.py -m
 
-    Usage 3: Generate one log file for the given date from the latest CSV file.
+    Usage 3: Follow Usage 2 and display time taken of each item. 
+    	python time_logger.py -m -t
+
+    Usage 4: Generate one log file for the given date from the latest CSV file.
     	python time_logger.py -d 2023-09-15
 '''
 
@@ -53,7 +56,13 @@ def build_args():
             '-m',
             dest='multi',
             action='store_true',
-            help='Display comment in multiple lines.')    
+            help='Display comment in multiple lines.') 
+
+    parser.add_argument(
+            '-t',
+            dest='time',
+            action='store_true',
+            help='Display time taken of each item.')                   
 
     #
     # Check arguments.
@@ -70,11 +79,14 @@ def extract_date(value):
 def extract_time(value):
 	return value[12:]    
 
-def calculate_minutes(value):
+def get_minutes(value):
 	HH = value[:2]
 	MM = value[3:]
-	minutes = int(HH) * 60 + int(MM)
-	return minutes
+	out = int(HH) * 60 + int(MM)
+	return out	
+
+def calculate_minutes(value):
+	return get_minutes(value)
 
 def write_daily(args, fn, df):
 	print('Writing %s' % fn)
@@ -89,11 +101,21 @@ def write_daily(args, fn, df):
 	f.write('$ = %02d:%02d\n' % (HH, MM))
 	f.write('\n')
 
+	#
+	# s = 'init'
+	# s = 'sep1' if 12:00 - ??:??
+	# s = 'area1'
+	# s = 'sep2' if 18:00 - ??:??
+	# s = 'area2'
+	#
+
+	s = 'init'  
 	for row in df.iterrows():
 		FromTime = row[1]['FromTime']
 		ToTime = row[1]['ToTime']
 		Class = row[1]['Class']
-		
+		DurationMinutes = row[1]['DurationMinutes']
+	
 		Comment = row[1]['Comment']
 		if pd.isna(Comment):
 			Comment = ''
@@ -104,14 +126,48 @@ def write_daily(args, fn, df):
 		else:
 			Tags = Tags + ' '
 
+		if s == 'init':
+			if get_minutes(FromTime) >= get_minutes('12:00'):
+				s = 'sep1'
+			elif get_minutes(FromTime) >= get_minutes('18:00'): 
+				s = 'sep2'			
+		elif s == 'sep1':
+			s = 'area1'
+		elif s == 'area1':
+			if get_minutes(FromTime) >= get_minutes('18:00'): 
+				s = 'sep2'	
+		elif s == 'sep2':
+			s = 'area2'		
+		elif s == 'area2':
+			pass
+		else:
+			assert False, s
+
+		#print('%10s | %s - %s' % (s, FromTime, ToTime))
+
+		if s in ['sep1', 'sep2']:
+			f.write('-'*40+'\n')
+
+		#f.write('===')
 		if Comment == '':
-			f.write('%s - %s | %s%s\n' % (FromTime, ToTime, Tags, Class))
+			if args.time:
+				f.write('%s - %s %3d | %s%s\n' % (FromTime, ToTime, DurationMinutes, Tags, Class))
+			else:
+				f.write('%s - %s | %s%s\n' % (FromTime, ToTime, Tags, Class))
 		else:
 			if args.multi:
-				f.write('%s - %s | %s%s\n' % (FromTime, ToTime, Tags, Class))
-				f.write('              | %s\n' % Comment)
-			else:			
-				f.write('%s - %s | %s%s | %s\n' % (FromTime, ToTime, Tags, Class, Comment))
+				if args.time:
+					f.write('%s - %s %3d | %s%s\n' % (FromTime, ToTime, DurationMinutes, Tags, Class))
+					f.write('                  | %s\n' % Comment)					
+				else:
+					f.write('%s - %s | %s%s\n' % (FromTime, ToTime, Tags, Class))
+					f.write('              | %s\n' % Comment)
+			else:
+				if args.time:	
+					f.write('%s - %s %3d | %s%s | %s\n' % (FromTime, ToTime, DurationMinutes, Tags, Class, Comment))
+				else:		
+					f.write('%s - %s | %s%s | %s\n' % (FromTime, ToTime, Tags, Class, Comment))
+
 
 	f.close()
 
@@ -172,7 +228,6 @@ def main():
 	df['FromTime'] = df['From'].apply(extract_time)
 	df['ToTime'] = df['To'].apply(extract_time)
 	df['DurationMinutes'] = df['Duration'].apply(calculate_minutes)
-
 
 	#
 	# If -d 
