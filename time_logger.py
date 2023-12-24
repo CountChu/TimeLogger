@@ -14,7 +14,7 @@
 # NOTICE.
 #       Author: visualge@gmail.com (CountChu)
 #       Created on 2023/9/16
-#       Updated on 2023/11/12
+#       Updated on 2023/12/24
 #
 
 import argparse
@@ -65,13 +65,11 @@ def build_args():
             help='Display time taken of each item.')                   
 
     #
-    # Check arguments.
+    # Return arguments.
     #
 
     args = parser.parse_args()	
-
     return args
-
 
 def extract_date(value):
 	return value[:10]
@@ -88,7 +86,7 @@ def get_minutes(value):
 def calculate_minutes(value):
 	return get_minutes(value)
 
-def write_daily(args, fn, df):
+def write_daily(op_multi, op_time, fn, df):
 	print('Writing %s' % fn)
 
 	minutes_0 = df[df['Tags'] == '$']['DurationMinutes'].sum()
@@ -99,7 +97,7 @@ def write_daily(args, fn, df):
 	HH = minutes_0 // 60
 	MM = minutes_0 % 60
 	f.write('$ = %02d:%02d\n' % (HH, MM))
-	f.write('\n')
+	f.write('-'*40+'\n')	
 
 	#
 	# s = 'init'
@@ -150,20 +148,20 @@ def write_daily(args, fn, df):
 
 		#f.write('===')
 		if Comment == '':
-			if args.time:
+			if op_time:
 				f.write('%s - %s %3d | %s%s\n' % (FromTime, ToTime, DurationMinutes, Tags, Class))
 			else:
 				f.write('%s - %s | %s%s\n' % (FromTime, ToTime, Tags, Class))
 		else:
-			if args.multi:
-				if args.time:
+			if op_multi:
+				if op_time:
 					f.write('%s - %s %3d | %s%s\n' % (FromTime, ToTime, DurationMinutes, Tags, Class))
 					f.write('                  | %s\n' % Comment)					
 				else:
 					f.write('%s - %s | %s%s\n' % (FromTime, ToTime, Tags, Class))
 					f.write('              | %s\n' % Comment)
 			else:
-				if args.time:	
+				if op_time:	
 					f.write('%s - %s %3d | %s%s | %s\n' % (FromTime, ToTime, DurationMinutes, Tags, Class, Comment))
 				else:		
 					f.write('%s - %s | %s%s | %s\n' % (FromTime, ToTime, Tags, Class, Comment))
@@ -171,31 +169,7 @@ def write_daily(args, fn, df):
 
 	f.close()
 
-def main():
-
-	#
-	# Read arguments.
-	#
-
-	args = build_args()
-
-	#
-	# Get files in the data directory.
-	#
-
-	csv_ls = []
-	for dn in os.listdir('data'):
-		if os.path.splitext(dn)[1] != '.csv':
-			continue 
-
-		csv_ls.append(os.path.join('data', dn))
-
-	#
-	# Read the newest csv.
-	#
-
-	csv_ls.sort()
-	csv = csv_ls[-1]
+def handle_csv(op_date, op_multi, op_time, csv):
 
 	#
 	# Parse csv.
@@ -233,8 +207,8 @@ def main():
 	# If -d 
 	#
 
-	if args.date != None:
-		df = df[df['Date'] == args.date]	
+	if op_date!= None:
+		df = df[df['Date'] == op_date]	
 
 	columns = ['Date', 'FromTime', 'ToTime', 'DurationMinutes', 'Class', 'Comment', 'Tags']
 	df2 = df[columns]
@@ -267,8 +241,39 @@ def main():
 		out_fn = os.path.join('output', '%s.txt' % Date)
 		df3 = df2[df2['Date'] == Date]
 
-		write_daily(args, out_fn, df3)
+		write_daily(op_multi, op_time, out_fn, df3)
 
+def main():
+
+	#
+	# Read arguments.
+	#
+
+	args = build_args()
+
+	#
+	# Get files in the data directory.
+	#
+
+	csv_ls = []
+	for dn in os.listdir('data'):
+		if os.path.splitext(dn)[1] != '.csv':
+			continue 
+
+		csv_ls.append(os.path.join('data', dn))
+
+	#
+	# Read the newest csv.
+	#
+
+	csv_ls.sort()
+	csv = csv_ls[-1]
+
+	#
+	# Handle the csv.
+	#
+
+	handle_csv(args.date, args.multi, args.time, csv)
 
 if __name__ == '__main__':
 	main()

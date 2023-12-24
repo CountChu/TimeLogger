@@ -1,6 +1,3 @@
-# TimeLogger
-The project reads the latest CSV file and output time log files for all dates.
-
 # time_logger.py
 The app reads the latest CSV file and generates time log files for all dates.
 
@@ -30,4 +27,12 @@ python time_logger.py -m -t
 Usage 4: Generate one log file for the given date from the latest CSV file.
 ```
 python time_logger.py -d 2023-09-15
+```
+
+# watch_dog.py
+The app triggers time_logger when detecting a file CSV created in a specific directory. The application is run in Mac.
+
+Usage 1:
+```
+python watch_dog.py
 ```
