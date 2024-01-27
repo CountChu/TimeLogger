@@ -21,14 +21,14 @@ br = pdb.set_trace
 class TestMyModule(unittest.TestCase):
 
 	def setUp(self):
-		self.csv = 'data/report-1706351147.csv'
+		self.dn = 'test-data'
+		self.csv = os.path.join(self.dn, 'report-1706351147.csv')
 
 	def test_1(self):
 		self.assertEqual(1+2, 3)
 
 	def test_get_newest_csv(self):
-		dn = 'data'
-		csv = time_logger.get_newest_csv(dn)
+		csv = time_logger.get_newest_csv(self.dn)
 		self.assertEqual(csv, self.csv)
 
 	def test_parse_csv(self):
