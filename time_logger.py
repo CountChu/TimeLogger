@@ -35,7 +35,10 @@ def build_args():
     Usage 3: Follow Usage 2 and display time taken of each item. 
         python time_logger.py -m -t
 
-    Usage 4: Generate one log file for the given date from the latest CSV file.
+    Usage 4: Follow Usage 3 and display non-first lines with indent. 
+        python time_logger.py -m -t --indent
+
+    Usage 5: Generate one log file for the given date from the latest CSV file.
         python time_logger.py -d 2023-09-15
 '''
 
@@ -63,6 +66,12 @@ def build_args():
             dest='time',
             action='store_true',
             help='Display time taken of each item.') 
+
+    parser.add_argument(
+            '--indent',
+            dest='indent',
+            action='store_true',
+            help='Display non-first lines with indent.')     
 
     parser.add_argument(
             '-v',
@@ -109,7 +118,7 @@ def get_TagSet(df):
         out = out.union(set(TagList))
     return out
 
-def write_daily(op_multi, op_time, fn, verbose, df):
+def write_daily(op_multi, op_indent, op_time, fn, verbose, df):
     if verbose:
         print('Writing %s' % fn)
 
@@ -163,7 +172,10 @@ def write_daily(op_multi, op_time, fn, verbose, df):
             elif get_minutes(FromTime) >= get_minutes('18:00'): 
                 s = 'sep2'          
         elif s == 'sep1':
-            s = 'area1'
+            if get_minutes(FromTime) >= get_minutes('18:00'): 
+                s = 'sep2'
+            else:
+                s = 'area1'
         elif s == 'area1':
             if get_minutes(FromTime) >= get_minutes('18:00'): 
                 s = 'sep2'  
@@ -174,25 +186,43 @@ def write_daily(op_multi, op_time, fn, verbose, df):
         else:
             assert False, s
 
-        #print('%10s | %s - %s' % (s, FromTime, ToTime))
+        print('%10s | %s - %s' % (s, FromTime, ToTime))
 
         if s in ['sep1', 'sep2']:
             f.write('-'*40+'\n')
 
         #f.write('===')
         if Comment == '':
-            if op_time:
-                f.write('%s - %s %3d | %s%s\n' % (FromTime, ToTime, DurationMinutes, Tags, Class))
+            if op_multi and op_indent:
+                if op_time:
+                    f.write('%s - %s %3d %s\n' % (FromTime, ToTime, DurationMinutes, Tags)) 
+                    f.write('    [%s]\n' % (Class))
+                else:
+                    f.write('%s - %s% s\n' % (FromTime, ToTime, Tags))
+                    f.write('    [%s]\n' % (Class))
             else:
-                f.write('%s - %s | %s%s\n' % (FromTime, ToTime, Tags, Class))
-        else:
-            if op_multi:
                 if op_time:
                     f.write('%s - %s %3d | %s%s\n' % (FromTime, ToTime, DurationMinutes, Tags, Class))
-                    f.write('                  | %s\n' % Comment)                   
                 else:
                     f.write('%s - %s | %s%s\n' % (FromTime, ToTime, Tags, Class))
-                    f.write('              | %s\n' % Comment)
+        else:
+            if op_multi:
+                if op_indent:
+                    if op_time:
+                        f.write('%s - %s %3d %s\n' % (FromTime, ToTime, DurationMinutes, Tags))
+                        f.write('    [%s]\n' % (Class))
+                        f.write('    %s\n' % Comment)                   
+                    else:
+                        f.write('%s - %s %s\n' % (FromTime, ToTime, Tags))
+                        f.write('    [%s]\n' % (Class))
+                        f.write('    %s\n' % Comment)
+                else:
+                    if op_time:
+                        f.write('%s - %s %3d | %s%s\n' % (FromTime, ToTime, DurationMinutes, Tags, Class))
+                        f.write('                  | %s\n' % Comment)                   
+                    else:
+                        f.write('%s - %s | %s%s\n' % (FromTime, ToTime, Tags, Class))
+                        f.write('              | %s\n' % Comment)
             else:
                 if op_time: 
                     f.write('%s - %s %3d | %s%s | %s\n' % (FromTime, ToTime, DurationMinutes, Tags, Class, Comment))
@@ -284,7 +314,7 @@ def dump_df(df, op_verbose):
 
     return df
 
-def handle_csv(csv, op_date, op_multi, op_time, op_verbose):
+def handle_csv(csv, op_date, op_multi, op_indent, op_time, op_verbose):
 
     df = parse_csv(csv, op_date, op_verbose)
     dump_df(df, op_verbose)
@@ -304,7 +334,7 @@ def handle_csv(csv, op_date, op_multi, op_time, op_verbose):
             else:
                 verbose = False
 
-        write_daily(op_multi, op_time, out_fn, verbose, df2)
+        write_daily(op_multi, op_indent, op_time, out_fn, verbose, df2)
         if i == 2 and n >= 5:
             print('... ...')
 
@@ -345,7 +375,7 @@ def main():
     # Handle the csv.
     #
 
-    handle_csv(args.date, args.multi, args.time, args.verbose, csv)
+    handle_csv(csv, args.date, args.multi, args.indent, args.time, args.verbose)
 
 if __name__ == '__main__':
     main()
