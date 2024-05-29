@@ -62,7 +62,7 @@ class TestMyModule(unittest.TestCase):
 		self.assertEquals(minutes, 408)
 
 	def test_handle_csv(self):
-		time_logger.handle_csv(self.csv, None, True, True, False) 
+		time_logger.handle_csv(self.csv, None, True, False, True, False) 
 
 def main():
 	unittest.main()
@@ -70,3 +70,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+

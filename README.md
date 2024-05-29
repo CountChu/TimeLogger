@@ -13,18 +13,21 @@ python time_logger.py
 ```
 
 Usage 2: Follow Usage 1 and display contents as multiple lines. 
-
 ```
 python time_logger.py -m
 ```
 
 Usage 3: Follow Usage 2 and display time taken of each item. 
-
 ```
 python time_logger.py -m -t
 ```
 
-Usage 4: Generate one log file for the given date from the latest CSV file.
+Usage 4: Follow Usage 3 and display non-first lines with indent.
+```
+python time_logger.py -m -t --indent
+``` 
+
+Usage 5: Generate one log file for the given date from the latest CSV file.
 ```
 python time_logger.py -d 2023-09-15
 ```

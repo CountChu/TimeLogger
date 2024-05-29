@@ -35,7 +35,7 @@ class MyHandler(FileSystemEventHandler):
             print(fn)
             csv = fn
             time.sleep(5)
-            time_logger.handle_csv(csv, op_date=None, op_multi=True, op_time=True, op_verbose=False)       
+            time_logger.handle_csv(csv, op_date=None, op_multi=True, op_indent=True, op_time=True, op_verbose=False)       
 
 def start_monitoring(path='.'):
     event_handler = MyHandler()
